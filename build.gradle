@@ -1,0 +1,121 @@
+apply plugin: 'android-library'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'maven-publish'
+
+// define company repositories
+def nuskinNexusSnapshots = [name: 'nuskinNexusSnapshots', url: 'https://nexus.nuskin.net/nexus/content/repositories/snapshots']
+def nuskinNexusReleases = [name: 'nuskinNexusReleases', url: 'https://nexus.nuskin.net/nexus/content/repositories/releases']
+def nuskinNexusCentral = [name: 'nuskinNexusCentral', url: 'https://nexus.nuskin.net/nexus/content/repositories/central']
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:0.7.+'
+    }
+}
+
+repositories {
+    maven {
+        name nuskinNexusCentral['name']
+        url nuskinNexusCentral['url']
+    }
+    maven {
+        name nuskinNexusReleases['name']
+        url nuskinNexusReleases['url']
+    }
+    maven {
+        name nuskinNexusSnapshots['name']
+        url nuskinNexusSnapshots['url']
+    }
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    compile 'com.android.support:support-v4:18.0.0'
+    compile files(
+            'src/main/libs/abtest.jar',
+            'src/main/libs/aviary-headless-library.jar',
+            'src/main/libs/aviary-library.jar',
+            'src/main/libs/aviary-tracking.jar',
+            'src/main/libs/horizontalvariablelistview.jar',
+            'src/main/libs/imageviewtouch.jar'
+    )
+}
+
+android.libraryVariants
+
+// setting values from the environment
+ext.nexusUser = System.properties['NEXUS_USER'] ?: ''
+ext.nexusPass = System.properties['NEXUS_PASS'] ?: ''
+version = System.properties['RELEASE'] ? project.releaseVersion : project.snapshotVersion
+
+publishing {
+    publications {
+        aviary(MavenPublication) {
+            artifact './build/libs/aviary-' + version + determineArtifactSuffix()
+        }
+    }
+
+    repositories {
+        // publishing task: clean build publishAviaryPublicationToNuskinNexusSnapshotsRepository
+        maven {
+            url nuskinNexusSnapshots['url']
+            name nuskinNexusSnapshots['name']
+            credentials {
+                username nexusUser
+                password nexusPass
+            }
+        }
+
+        // publishing task: -DRELEASE=true clean build publishAviaryPublicationToNuskinNexusReleasesRepository
+        maven {
+            url nuskinNexusReleases['url']
+            name nuskinNexusReleases['name']
+            credentials {
+                username nexusUser
+                password nexusPass
+            }
+        }
+    }
+}
+
+android {
+    compileSdkVersion 18
+    buildToolsVersion '19'
+
+    lintOptions {
+        abortOnError false
+    }
+
+    defaultConfig {
+        minSdkVersion 14
+        targetSdkVersion 18
+    }
+
+    packagingOptions {
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/license.txt'
+        exclude 'META-INF/notice.txt'
+    }
+}
+
+def determineArtifactSuffix() {
+    String artifactSuffix = '-debug.aar'
+
+    if (!version.contains('SNAPSHOT')) {
+        artifactSuffix = '.aar'
+    }
+
+    return artifactSuffix
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.9'
+}

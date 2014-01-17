@@ -1,1 +1,3 @@
-##As of July 28, 2013, the Aviary Android SDK will no longer be distributed via GitHub. Please visit http://www.aviary.com/android to download the latest version.
+## Aviary 3.0 SDK - Gradle Build
+
+This is a gradle build of the Aviary 3.0 SDK. This is an Android library.
